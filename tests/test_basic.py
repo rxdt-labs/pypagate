@@ -1,6 +1,7 @@
 from pypagate import Term, Universe, Variable, \
                      fire_on, fire_on_each, \
-                     permit, on_change, either, verify_any, verify_all
+                     permit, on_change, either, verify_any, verify_all, \
+                     as_float, as_int, as_str
 
 
 def test_inc():
@@ -103,3 +104,17 @@ def test_fire_on_each():
     assert y == 1
     v2.change(2)
     assert y == 2
+
+def test_type_conversion():
+    t1 = Term(0)
+    f1 = as_str(t1)
+    f2 = as_float(t1)
+    assert f1.unwrap() == '0'
+    assert t1.unwrap() == 0
+    assert float(t1) == 0.0
+    assert int(t1) == 0
+    assert f2.unwrap() == 0.0
+    t2 = Term(1.5)
+    f2 = as_int(t2)
+    assert t2 == 1.5
+    assert f2 == 1
