@@ -2,6 +2,8 @@
   <img src="pypagate_logo.svg" alt="pypagate">
 </p>
 
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Modular-Game-Components/punyecs/pytest.yml)
+
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/thyrgle/pypagate/pytest.yml)
 
 A dead simple reactive library based on mathematical formulae.

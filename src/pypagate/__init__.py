@@ -108,6 +108,41 @@ def _register_unary_op(unary_op: Callable[[Any], Any]):
         return formula
     return u
 
+
+def as_str(f: Term | Formula):
+    """
+    Stringify the contents of a Formula. If you want to actually extract
+    the values of a Formula, call str on it.
+
+    :params f: The formula to convert.
+    """
+    formula = Formula(unary_op=str, operands=[f])
+    f._parents.append(formula)
+    return formula
+
+def as_float(f: Term | Formula):
+    """
+    Floatify the contents of a Formula. If you want to actually extract
+    the values of a Formula, call float on it.
+
+    :params f: The formula to convert.
+    """
+    formula = Formula(unary_op=float, operands=[f])
+    f._parents.append(formula)
+    return formula
+
+def as_int(f: Term | Formula):
+    """
+    Intify the contents of a Formula. If you want to actually extract
+    the values of a Formula, call int on it.
+
+    :params f: The formula to convert.
+    """
+    formula = Formula(unary_op=int, operands=[f])
+    f._parents.append(formula)
+    return formula
+
+
 @dataclass
 class Formula:
     """A Well-Formed-Formula that consists of Term objects (i.e. variables) and 
