@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="pypagate_logo.svg" alt="pypagate">
+  <img src="pypagate-logo.svg" alt="pypagate">
 </p>
 
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Modular-Game-Components/punyecs/pytest.yml)

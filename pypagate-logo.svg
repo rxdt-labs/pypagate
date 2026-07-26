@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="400" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2E1065"/>
+      <stop offset="1" stop-color="#6D28D9"/>
+    </linearGradient>
+    <linearGradient id="gradRight" x1="160" y1="280" x2="100" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4a5568"/>
+      <stop offset="28%" stop-color="#4a5568"/>
+      <stop offset="45%" stop-color="#5ee6c9"/>
+      <stop offset="65%" stop-color="#ff8a5e"/>
+      <stop offset="100%" stop-color="#ff5e8a"/>
+    </linearGradient>
+    <linearGradient id="gradLeft" x1="240" y1="280" x2="300" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4a5568"/>
+      <stop offset="28%" stop-color="#4a5568"/>
+      <stop offset="45%" stop-color="#5ee6c9"/>
+      <stop offset="65%" stop-color="#ff8a5e"/>
+      <stop offset="100%" stop-color="#ff5e8a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- badge -->
+  <rect x="0" y="0" width="400" height="400" rx="88" fill="url(#bg)"/>
+
+  <!-- "]" — vertical bar on the right, arms opening left -->
+  <path d="M100,120
+           L134,120
+           Q160,120 160,146
+           L160,254
+           Q160,280 134,280
+           L100,280"
+        fill="none" stroke="url(#gradRight)" stroke-width="30" stroke-linecap="butt" stroke-linejoin="round"/>
+
+  <!-- "[" — vertical bar on the left, arms opening right -->
+  <path d="M300,120
+           L266,120
+           Q240,120 240,146
+           L240,254
+           Q240,280 266,280
+           L300,280"
+        fill="none" stroke="url(#gradLeft)" stroke-width="30" stroke-linecap="butt" stroke-linejoin="round"/>
+</svg>
