@@ -202,7 +202,7 @@ class Formula:
             return evaluate(self)
         return self._value
 
-    def __str__(self):
+    def __repr__(self):
         # Bypass Python's name mangling by directly accessing the runtime globals
         if not self.bin_op:
             unary_map = globals().get("__unary_str_map", {})
@@ -214,6 +214,16 @@ class Formula:
         op_str = f" {bin_map.get(self.bin_op, 'op')} "
         # N-ary string representation: join all operands with the operator
         return "(" + op_str.join(str(op) for op in self.operands) + ")"  
+
+    def __str__(self):
+        return str(self.unwrap())
+
+    def __float__(self):
+        return float(self.unwrap())
+
+    def __int__(self):
+        return int(self.unwrap())
+
     
     # Binary operations
     __add__ = _register_bin_op(operator.add)
