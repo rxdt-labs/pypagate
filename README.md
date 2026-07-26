@@ -3,8 +3,8 @@
 </p>
 
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Modular-Game-Components/punyecs/pytest.yml)
+![PyPI Python Version](https://img.shields.io/pypi/pyversions/pypagate)
 
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/thyrgle/pypagate/pytest.yml)
 
 A dead simple reactive library based on mathematical formulae.
 
