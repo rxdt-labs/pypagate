@@ -326,7 +326,13 @@ class Term:
         return self._value
 
     def __str__(self):
-        return f"Term({self._value})"
+        return str(self._value)
+
+    def __float__(self):
+        return float(self._value)
+
+    def __int__(self):
+        return int(self._value)
 
     # Binary operators
     __add__ = _register_bin_op(operator.add)
