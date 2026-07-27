@@ -118,3 +118,12 @@ def test_type_conversion():
     f2 = as_int(t2)
     assert t2 == 1.5
     assert f2 == 1
+
+def test_safe_type_conversion():
+    t1 = Term('')
+    handle_int = {'' : 0}
+    handle_float = {'' : 0.0}
+    f1 = as_int(t1, excepts=handle_int)
+    f2 = as_float(t1, excepts=handle_float)
+    assert int(f1) == 0
+    assert float(f2) == 0.0

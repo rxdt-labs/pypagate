@@ -109,36 +109,57 @@ def _register_unary_op(unary_op: Callable[[Any], Any]):
     return u
 
 
-def as_str(f: Term | Formula):
+def as_str(f: Term | Formula, excepts: dict | None=None):
     """
     Stringify the contents of a Formula. If you want to actually extract
     the values of a Formula, call str on it.
 
     :params f: The formula to convert.
+    :params excepts: For special cases that `str` would not normally convert
+    but you want to convert.
     """
-    formula = Formula(unary_op=str, operands=[f])
+    def safer_str(obj):
+        try:
+            return excepts[obj]
+        except (KeyError, TypeError):
+            return str(obj)
+    formula = Formula(unary_op=safer_str, operands=[f])
     f._parents.append(formula)
     return formula
 
-def as_float(f: Term | Formula):
+def as_float(f: Term | Formula, excepts: dict | None=None):
     """
     Floatify the contents of a Formula. If you want to actually extract
     the values of a Formula, call float on it.
 
     :params f: The formula to convert.
+    :params excepts: For special cases that `float` would not normally convert
+    but you want to convert.
     """
-    formula = Formula(unary_op=float, operands=[f])
+    def safer_float(obj):
+        try:
+            return excepts[obj]
+        except (KeyError, TypeError):
+            return float(obj)
+    formula = Formula(unary_op=safer_float, operands=[f])
     f._parents.append(formula)
     return formula
 
-def as_int(f: Term | Formula):
+def as_int(f: Term | Formula, excepts: dict | None=None):
     """
     Intify the contents of a Formula. If you want to actually extract
     the values of a Formula, call int on it.
 
     :params f: The formula to convert.
+    :params excepts: For special cases that `int` would not normally convert
+    but you want to convert.
     """
-    formula = Formula(unary_op=int, operands=[f])
+    def safer_int(obj):
+        try:
+            return excepts[obj]
+        except (KeyError, TypeError):
+            return int(obj)
+    formula = Formula(unary_op=safer_int, operands=[f])
     f._parents.append(formula)
     return formula
 
