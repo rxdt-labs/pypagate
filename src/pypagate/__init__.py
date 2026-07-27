@@ -335,7 +335,7 @@ class Term:
         """Change the wrapped value of the term. (Internally updates formulas
         that use this term.)
         
-        :param new_value: The value to change self.value to.
+        :param new_value: The value to change self._value to.
         """
         # Nothing actually changed.
         if self._value == new_value:
@@ -343,7 +343,7 @@ class Term:
         # Something did change.
         # Execute _on_change funcs.
         for func in self._on_change:
-            func(self.value, new_value)
+            func(self._value, new_value)
         # Execute _on_fire funcs if the Term has truthiness of True
         if self.unwrap():
             for func in self._fire_on:
