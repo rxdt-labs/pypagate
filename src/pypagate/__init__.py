@@ -343,7 +343,7 @@ class Term:
         # Something did change.
         # Execute _on_change funcs.
         for func in self._on_change:
-            func()
+            func(self.value, new_value)
         # Execute _on_fire funcs if the Term has truthiness of True
         if self.unwrap():
             for func in self._fire_on:
