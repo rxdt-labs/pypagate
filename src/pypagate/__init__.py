@@ -120,7 +120,7 @@ def as_str(f: Term | Formula, excepts: dict | None=None):
     """
     def safer_str(obj):
         try:
-            return excepts[obj]
+            return excepts[obj] # pyrefly: ignore
         except (KeyError, TypeError):
             return str(obj)
     formula = Formula(unary_op=safer_str, operands=[f])
@@ -138,7 +138,7 @@ def as_float(f: Term | Formula, excepts: dict | None=None):
     """
     def safer_float(obj):
         try:
-            return excepts[obj]
+            return excepts[obj] # pyrefly: ignore
         except (KeyError, TypeError):
             return float(obj)
     formula = Formula(unary_op=safer_float, operands=[f])
@@ -156,7 +156,7 @@ def as_int(f: Term | Formula, excepts: dict | None=None):
     """
     def safer_int(obj):
         try:
-            return excepts[obj]
+            return excepts[obj] # pyrefly: ignore
         except (KeyError, TypeError):
             return int(obj)
     formula = Formula(unary_op=safer_int, operands=[f])
