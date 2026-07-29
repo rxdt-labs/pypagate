@@ -49,12 +49,12 @@ Let us look at a small example:
 >>> from pypagate import Term
 >>> x = Term(5)
 >>> y = x + 1
->>> print(x.unwrap()) # (Call unwrap to get the value x currently stores)
+>>> print(x) # (Call unwrap to get the value x currently stores)
 5
->>> print(y.unwrap())
+>>> print(y)
 6
 >>> x += 1
->>> print(y.unwrap())
+>>> print(y)
 7
 ```
 
