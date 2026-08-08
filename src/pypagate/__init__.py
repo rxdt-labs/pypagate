@@ -247,12 +247,19 @@ class Formula:
             unary_map = globals().get("__unary_str_map", {})
             op_name = unary_map.get(self.unary_op, getattr(self.unary_op, "__name__", "op"))
             # Unary operations only have one operand
-            return op_name + " (" + str(self.operands[0]) + ")"
+            return op_name + " (" + repr(self.operands[0]) + ")"
             
         bin_map = globals().get("__bin_str_map", {})
         op_str = f" {bin_map.get(self.bin_op, 'op')} "
         # N-ary string representation: join all operands with the operator
-        return "(" + op_str.join(str(op) for op in self.operands) + ")"  
+        parens1 = ('', '')
+        parens2 = ('', '')
+        if isinstance(self.operands[0], Formula):
+            parens1 = (' (', ') ')
+        if isinstance(self.operands[1], Formula):
+            parens2 = (' (', ') ') 
+        return parens1[0] + repr(self.operands[0]) + parens1[1] + \
+      op_str + parens2[0] + repr(self.operands[1]) + parens2[1]
 
     def __str__(self):
         return str(self.unwrap())
@@ -375,6 +382,9 @@ class Term:
     def unwrap(self):
         """Returns the value of the Term at the current moment."""
         return self._value
+
+    def __repr__(self):
+        return f'Var[{self.unwrap()}]'
 
     def __str__(self):
         return str(self._value)

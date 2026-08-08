@@ -127,3 +127,9 @@ def test_safe_type_conversion():
     f2 = as_float(t1, excepts=handle_float)
     assert int(f1) == 0
     assert float(f2) == 0.0
+
+def test_repr_basic():
+    x = Term(1)
+    y = Term(2)
+    add = x + y
+    assert repr(add) == "Var[1] + Var[2]"
