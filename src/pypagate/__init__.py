@@ -164,6 +164,24 @@ def as_int(f: Term | Formula, excepts: dict | None=None):
     return formula
 
 
+def as_bool(f: Term | Formula, excepts: dict | None=None):
+    """
+    Intify the contents of a Formula. If you want to actually extract
+    the values of a Formula, call int on it.
+
+    :params f: The formula to convert.
+    :params excepts: For special cases that `int` would not normally convert
+    but you want to convert.
+    """
+    def safer_bool(obj):
+        try:
+            return excepts[obj] # pyrefly: ignore
+        except (KeyError, TypeError):
+            return bool(obj)
+    formula = Formula(unary_op=safer_bool, operands=[f])
+    f._parents.append(formula)
+    return formula
+
 @dataclass
 class Formula:
     """A Well-Formed-Formula that consists of Term objects (i.e. variables) and 
@@ -245,6 +263,8 @@ class Formula:
     def __int__(self):
         return int(self.unwrap())
 
+    def __bool__(self):
+        return bool(self.unwrap())
     
     # Binary operations
     __add__ = _register_bin_op(operator.add)
