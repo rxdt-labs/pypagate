@@ -96,7 +96,7 @@ From ``pypagate.source`` we can use ``SourceMap`` to essentially take old-world 
        global running
        running.change(False)
 
-   while running.unwrap():
+   while bool(running):
        source.listen({"quit_event": pygame.event.peek(eventtype=pygame.QUIT)})
 
        # fill the screen with a color to wipe away anything from last frame
@@ -135,7 +135,7 @@ Let us make ``running`` no longer a global variable by encapsulating inside of a
 
        def run(self):
            self.running.change(True)
-           while self.running.unwrap():
+           while bool(self.running):
                events.listen({
                    "quit_event": pygame.event.peek(eventtype=pygame.QUIT),
                    "dt": clock.tick(60)
@@ -180,7 +180,7 @@ Putting everything together we get:
 
        def run(self):
            self.running.change(True)
-           while self.running.unwrap():
+           while bool(self.running):
                events.listen({
                    "quit_event": pygame.event.peek(eventtype=pygame.QUIT),
                    "dt": clock.tick(60)
