@@ -6,7 +6,7 @@ import operator
 from typing import Any, Literal, Sequence
 
 
-def evaluate(form: Formula | Term ) -> Any:
+def evaluate(form: Formula | Term | Const) -> Any:
     """Given a Term or Formula get the *current* value it contains. For terms
     this is the same as .value method, but for for Formula, the entire
     expression is recursively evaluated.
@@ -16,7 +16,7 @@ def evaluate(form: Formula | Term ) -> Any:
     :return: The *current* value of the Formula or Term.
     """
     # Basic building blocks are variables and constants (i.e. Terms)
-    if isinstance(form, Term) or (not form._needs_update):
+    if isinstance(form, Term) or isinstance(form, Const) or (not form._needs_update):
         return form.value
     else: # Otherwise, recursively evaluate.
         vals = [evaluate(val) for val in form.operands]
@@ -54,39 +54,43 @@ unary_str_map = {
 # Similar to here https://stackoverflow.com/a/7844038/667648
 def register_bin_op(op: Callable[[Any, Any], Any]):
     """Helper function intended to help construct binary operations."""
-    def b(self: Formula | Term, other: Formula | Term | Number | Literal):
+    def b(self: Formula | Term, other: Formula | Term | Number | Literal | Const):
         if isinstance(other, Number):
-            other = Term(other)
-        assert isinstance(other, Formula) or isinstance(other, Term) 
+            other = Const(other)
+        assert isinstance(other, Formula) or isinstance(other, Term) or isinstance(other, Const)
         try:
             name = bin_str_map[op]
             formula = Formula(op=op, operands=[self, other], pos="infix", name=name)
             self._parents.append(formula)
-            other._parents.append(formula)
+            if not isinstance(other, Const):
+                other._parents.append(formula)
             return formula
         except KeyError:
             formula = Formula(op=op, operands=[self, other], name=op.__name__)
             self._parents.append(formula)
-            other._parents.append(formula)
+            if not isinstance(other, Const):
+                other._parents.append(formula)
             return formula
     return b
 
 def register_rbin_op(op: Callable[[Any, Any], Any]):
     """Helper function intended to help construct binary operations (reversed)."""
-    def b(self: Formula | Term, other: Formula | Term | Number | Literal):
+    def b(self: Formula | Term, other: Formula | Term | Const | Number | Literal):
         if isinstance(other, Number):
-            other = Term(other)
-        assert isinstance(other, Term) or isinstance(other, Formula)
+            other = Const(other)
+        assert isinstance(other, Term) or isinstance(other, Formula) or isinstance(other, Const)
         try:
             name = bin_str_map[op]
             formula = Formula(op=op, operands=[self, other], pos="infix", name=name)
             self._parents.append(formula)
-            other._parents.append(formula)
+            if not isinstance(other, Const):
+                other._parents.append(formula)
             return formula
         except KeyError:
             formula = Formula(op=op, operands=[other, self], pos="infix", name=op.__name__)
             self._parents.append(formula)
-            other._parents.append(formula)
+            if not isinstance(other, Const):
+                other._parents.append(formula)
             return formula
     return b
 
@@ -109,7 +113,8 @@ def register_func(f: Callable):
     def u(*args: Formula | Term):
         formula = Formula(op=f, operands=args, pos="prefix")
         for arg in args:
-            arg._parents.append(formula)
+            if not isinstance(arg, Const):
+                arg._parents.append(formula)
         return formula
     return u
 
@@ -194,7 +199,7 @@ class Formula:
     pos: str = "infix"
     name: str = "f"
     _value: Any = None
-    operands: Sequence[Formula | Term] = field(default_factory=list)    
+    operands: Sequence[Formula | Term | Const] = field(default_factory=list)    
     _parents: list[Formula] = field(default_factory=list)
     _binds: Any = field(default_factory=list)
     _fire_on: list[Callable] = field(default_factory=list)
@@ -446,6 +451,13 @@ class Term:
     __isub__ = _register_ibin_op(operator.isub)
     __ixor__ = _register_ibin_op(operator.ixor)
 
+@dataclass
+class Const:
+    _value: Any
+
+    @property
+    def value(self):
+        return self._value
 
 def bind(obj: Any, field_name: Any, form: Formula | Term):
     """Given an object and a field name, you can "bind" it to a Formula (or 
