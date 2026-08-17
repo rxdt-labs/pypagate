@@ -27,7 +27,7 @@ Let us look at a small example:
    >>> from pypagate import Term
    >>> x = Term(5)
    >>> y = x + 1
-   >>> print(x) # (Call unwrap to get the value x currently stores)
+   >>> print(x)
    5
    >>> print(y)
    6

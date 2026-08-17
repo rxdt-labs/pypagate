@@ -14,5 +14,4 @@ Contents
 
    basics
    listening
-   universes
    api
