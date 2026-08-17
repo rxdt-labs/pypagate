@@ -31,7 +31,7 @@ def test_func_listen():
         y = 3
     assert y == 0
     x += 1
-    assert x.unwrap() == 2
+    assert x.value == 2
     assert y == 0
     x += 1
     assert y == 3

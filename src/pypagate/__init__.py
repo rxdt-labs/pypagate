@@ -8,7 +8,7 @@ from typing import Any, Literal, Sequence
 
 def evaluate(form: Formula | Term ) -> Any:
     """Given a Term or Formula get the *current* value it contains. For terms
-    this is the same as .unwrap() method, but for for Formula, the entire
+    this is the same as .value method, but for for Formula, the entire
     expression is recursively evaluated.
 
     :param form: A formula (or term) to extract the current value of.
@@ -17,7 +17,7 @@ def evaluate(form: Formula | Term ) -> Any:
     """
     # Basic building blocks are variables and constants (i.e. Terms)
     if isinstance(form, Term) or (not form._needs_update):
-        return form.unwrap()
+        return form.value
     else: # Otherwise, recursively evaluate.
         vals = [evaluate(val) for val in form.operands]
         return form.op(*vals)
@@ -220,7 +220,7 @@ class Formula:
             setattr(obj, field_name, self._value)
             
         for func in self._fire_on:
-            if self.unwrap():
+            if self.value:
                  func()
 
     def _propegate(self):
@@ -231,11 +231,12 @@ class Formula:
         for obj, field_name in self._binds:
             setattr(obj, field_name, self._value)
         # or it may also be given a contract.
-        if self.unwrap():
+        if self.value:
             for func in self._fire_on:
                 func()
 
-    def unwrap(self):
+    @property
+    def value(self):
         """Get the value the formula currently evaluates to."""
         if self._needs_update:
             return evaluate(self)
@@ -257,16 +258,16 @@ class Formula:
        self.name + parens2[0] + " " + repr(self.operands[1]) + parens2[1]
 
     def __str__(self):
-        return str(self.unwrap())
+        return str(self.value)
 
     def __float__(self):
-        return float(self.unwrap())
+        return float(self.value)
 
     def __int__(self):
-        return int(self.unwrap())
+        return int(self.value)
 
     def __bool__(self):
-        return bool(self.unwrap())
+        return bool(self.value)
     
     # Binary operations
     __add__ = register_bin_op(operator.add)
@@ -316,7 +317,7 @@ def _register_ibin_op(bin_op: Callable[[Any, Any], Any]):
                 func(self._value, new_value)
             # Since it changed, also check truthiness and execute
             # corresponding functions.
-            if self.unwrap():
+            if self.value:
                 for func in self._fire_on:
                     func()
         self._value = new_value
@@ -349,7 +350,7 @@ class Term:
         for obj, field_name in self._binds:
             setattr(obj, field_name, self._value)
         # or it may also be given a contract.
-        if self.unwrap():
+        if self.value:
             for func in self._fire_on:
                 func()
 
@@ -367,19 +368,20 @@ class Term:
         for func in self._on_change:
             func(self._value, new_value)
         # Execute _on_fire funcs if the Term has truthiness of True
-        if self.unwrap():
+        if self.value:
             for func in self._fire_on:
                 func()
         # Continue updating.
         self._value = new_value
         self._propegate()
 
-    def unwrap(self):
+    @property
+    def value(self):
         """Returns the value of the Term at the current moment."""
         return self._value
 
     def __repr__(self):
-        return f'Var[{self.unwrap()}]'
+        return f'Var[{self.value}]'
 
     def __str__(self):
         return str(self._value)
@@ -485,7 +487,7 @@ def permit(form: Formula | Term, *args, **kwargs):
     """
     def permit_decorator(func):
         def f(*f_args, **f_kwargs):
-            if form.unwrap():
+            if form.value:
                 return func(*args, *f_args, **{**kwargs, **f_kwargs})
             else:
                 return (lambda: None)()
@@ -501,7 +503,7 @@ def either(form: Formula | Term, f: Callable[[], None], g: Callable[[], None]):
     :param g: Function to evaluate when ``form`` is ``False``
     """
     def func():
-        if form.unwrap():
+        if form.value:
             return f()
         return g()
     return func

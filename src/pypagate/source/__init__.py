@@ -27,7 +27,7 @@ class SourceMap:
             self[name].change(value)
         # Issue an evaluation of every formula from these terms.
         for form, func in self._exec_while:
-            if form.unwrap():
+            if form.value:
                 func()
         # Avoid a branch condition, execute these funcs always on every call
         # to listen.
@@ -68,7 +68,7 @@ def exec_either(form, f, g, source):
        source.listen(...) is called."""
     @exec_always(source)
     def func():
-        if form.unwrap():
+        if form.value:
             return f()
         return g()
     return func
