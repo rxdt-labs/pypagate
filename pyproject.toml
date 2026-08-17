@@ -1,6 +1,6 @@
 [project]
 name = "pypagate"
-version = "0.5.0"
+version = "0.6.0"
 description = "A simple library for functional reactive programming in Python"
 readme = "README.md"
 authors = [
