@@ -1,10 +1,9 @@
 from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from itertools import product
 from numbers import Number
 import operator
-from typing import Any, Literal
+from typing import Any, Literal, Sequence
 
 
 def evaluate(form: Formula | Term ) -> Any:
@@ -105,9 +104,9 @@ def register_unary_op(op: Callable[[Any], Any]):
             return formula
     return u
 
-def register_func(f: Callable[[Any], Any]):
+def register_func(f: Callable):
     """Helper function intended to help construct unary operations."""
-    def u(*args: list[Formula | Term]):
+    def u(*args: Formula | Term):
         formula = Formula(op=f, operands=args, pos="prefix")
         for arg in args:
             arg._parents.append(formula)
@@ -191,12 +190,12 @@ def as_bool(f: Term | Formula, excepts: dict | None=None):
 class Formula:
     """A Well-Formed-Formula that consists of Term objects (i.e. variables) and 
     operators."""
-    op: Callable[[Any, ...], Any]
+    op: Callable
     pos: str = "infix"
     name: str = "f"
     _value: Any = None
-    operands: list[Formula | Term ] = field(default_factory=list)    
-    _parents: list[Formula | Law] = field(default_factory=list)
+    operands: Sequence[Formula | Term] = field(default_factory=list)    
+    _parents: list[Formula] = field(default_factory=list)
     _binds: Any = field(default_factory=list)
     _fire_on: list[Callable] = field(default_factory=list)
     _on_change: list[Callable] = field(default_factory=list)
@@ -204,9 +203,7 @@ class Formula:
 
     def _update(self):
         # Capture the old truth state before mutation
-        old_truth = bool(self._value) if not self._needs_update else False
         new_value = evaluate(self)
-        new_truth = bool(new_value)
         
         if new_value != self._value:
             for func in self._on_change:
@@ -217,9 +214,6 @@ class Formula:
 
         for parent in self._parents:
             parent._needs_update = True
-            # The Cache Trigger: Only notify Laws if the boolean boundary was crossed
-            if isinstance(parent, Law) and old_truth != new_truth:
-                parent._notify_truth_flip(self, new_truth)
             parent._update()
             
         for obj, field_name in self._binds:
@@ -340,7 +334,7 @@ class Term:
     are also updated to reflect this change."""
     _value: Any = None
     # Parent formulas containing the variable.
-    _parents: list[Formula | Law] = field(default_factory=list)
+    _parents: list[Formula] = field(default_factory=list)
     # Raw Python fields that should change on update of this Term.
     _binds: list[tuple[Any, Any]] = field(default_factory=list)
     # List of functions that are executed if this Term is True.
