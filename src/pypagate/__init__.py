@@ -5,7 +5,6 @@ from itertools import product
 from numbers import Number
 import operator
 from typing import Any, Literal
-from functools import reduce
 
 
 def evaluate(form: Formula | Term ) -> Any:
@@ -21,20 +20,13 @@ def evaluate(form: Formula | Term ) -> Any:
     if isinstance(form, Term) or (not form._needs_update):
         return form.unwrap()
     else: # Otherwise, recursively evaluate.
-        if form.bin_op is None:
-            assert form.operands
-            assert form.unary_op is not None
-            return form.unary_op(evaluate(form.operands[0]))
-        else:
-            assert len(form.operands) >= 2
-            # Resolve all dependencies at once, then reduce them using the operator
-            evaluated_ops = [evaluate(op) for op in form.operands]
-            return reduce(form.bin_op, evaluated_ops)
+        vals = [evaluate(val) for val in form.operands]
+        return form.op(*vals)
 
 # String representation for unary and binary operations. Used in __str__ for
 # a Formula
 
-__bin_str_map = {
+bin_str_map = {
     # Arithmetic operators.
     operator.add : '+',
     operator.mul : '*',
@@ -52,7 +44,7 @@ __bin_str_map = {
 }
 
 
-__unary_str_map = {
+unary_str_map = {
     operator.abs : 'abs',
     operator.not_ : 'not',
     operator.pos : '+',
@@ -61,53 +53,66 @@ __unary_str_map = {
 
 
 # Similar to here https://stackoverflow.com/a/7844038/667648
-def _register_bin_op(bin_op: Callable[[Any, Any], Any]):
+def register_bin_op(op: Callable[[Any, Any], Any]):
     """Helper function intended to help construct binary operations."""
     def b(self: Formula | Term, other: Formula | Term | Number | Literal):
         if isinstance(other, Number):
             other = Term(other)
-        assert isinstance(other, Formula) or isinstance(other, Term)
-        
-        # The N-Ary Interceptor: Flatten left and right if they share the exact same operator
-        left_ops = self.operands if isinstance(self, Formula) and self.bin_op == bin_op else [self]
-        right_ops = other.operands if isinstance(other, Formula) and other.bin_op == bin_op else [other]
-        
-        new_operands = left_ops + right_ops
-        formula = Formula(bin_op=bin_op, operands=new_operands)
-        
-        # Wire the new master formula as the parent to all flat operands
-        for op in new_operands:
-            op._parents.append(formula)
-        return formula
+        assert isinstance(other, Formula) or isinstance(other, Term) 
+        try:
+            name = bin_str_map[op]
+            formula = Formula(op=op, operands=[self, other], pos="infix", name=name)
+            self._parents.append(formula)
+            other._parents.append(formula)
+            return formula
+        except KeyError:
+            formula = Formula(op=op, operands=[self, other], name=op.__name__)
+            self._parents.append(formula)
+            other._parents.append(formula)
+            return formula
     return b
 
-def _register_rbin_op(bin_op: Callable[[Any, Any], Any]):
+def register_rbin_op(op: Callable[[Any, Any], Any]):
     """Helper function intended to help construct binary operations (reversed)."""
     def b(self: Formula | Term, other: Formula | Term | Number | Literal):
         if isinstance(other, Number):
             other = Term(other)
         assert isinstance(other, Term) or isinstance(other, Formula)
-        
-        # The N-Ary Interceptor (Reversed Order)
-        left_ops = other.operands if isinstance(other, Formula) and other.bin_op == bin_op else [other]
-        right_ops = self.operands if isinstance(self, Formula) and self.bin_op == bin_op else [self]
-        
-        new_operands = left_ops + right_ops
-        formula = Formula(bin_op=bin_op, operands=new_operands)
-        
-        for op in new_operands:
-            op._parents.append(formula)
-        return formula
+        try:
+            name = bin_str_map[op]
+            formula = Formula(op=op, operands=[self, other], pos="infix", name=name)
+            self._parents.append(formula)
+            other._parents.append(formula)
+            return formula
+        except KeyError:
+            formula = Formula(op=op, operands=[other, self], pos="infix", name=op.__name__)
+            self._parents.append(formula)
+            other._parents.append(formula)
+            return formula
     return b
 
-def _register_unary_op(unary_op: Callable[[Any], Any]):
+def register_unary_op(op: Callable[[Any], Any]):
     """Helper function intended to help construct unary operations."""
     def u(self: Formula | Term):
-        formula = Formula(unary_op=unary_op, operands=[self])
-        self._parents.append(formula)
-        return formula
+        try:
+            name = unary_str_map[op]
+            formula = Formula(op=op, operands=[self], pos="prefix", name=name)
+            self._parents.append(formula)
+            return formula
+        except KeyError:
+            formula = Formula(op=op, operands=[self], pos="prefix", name=op.__name__)
+            self._parents.append(formula)
+            return formula
     return u
 
+def register_func(f: Callable[[Any], Any]):
+    """Helper function intended to help construct unary operations."""
+    def u(*args: list[Formula | Term]):
+        formula = Formula(op=f, operands=args, pos="prefix")
+        for arg in args:
+            arg._parents.append(formula)
+        return formula
+    return u
 
 def as_str(f: Term | Formula, excepts: dict | None=None):
     """
@@ -123,7 +128,7 @@ def as_str(f: Term | Formula, excepts: dict | None=None):
             return excepts[obj] # pyrefly: ignore
         except (KeyError, TypeError):
             return str(obj)
-    formula = Formula(unary_op=safer_str, operands=[f])
+    formula = Formula(op=safer_str, operands=[f])
     f._parents.append(formula)
     return formula
 
@@ -141,7 +146,7 @@ def as_float(f: Term | Formula, excepts: dict | None=None):
             return excepts[obj] # pyrefly: ignore
         except (KeyError, TypeError):
             return float(obj)
-    formula = Formula(unary_op=safer_float, operands=[f])
+    formula = Formula(op=safer_float, operands=[f])
     f._parents.append(formula)
     return formula
 
@@ -159,7 +164,7 @@ def as_int(f: Term | Formula, excepts: dict | None=None):
             return excepts[obj] # pyrefly: ignore
         except (KeyError, TypeError):
             return int(obj)
-    formula = Formula(unary_op=safer_int, operands=[f])
+    formula = Formula(op=safer_int, operands=[f])
     f._parents.append(formula)
     return formula
 
@@ -178,7 +183,7 @@ def as_bool(f: Term | Formula, excepts: dict | None=None):
             return excepts[obj] # pyrefly: ignore
         except (KeyError, TypeError):
             return bool(obj)
-    formula = Formula(unary_op=safer_bool, operands=[f])
+    formula = Formula(op=safer_bool, operands=[f])
     f._parents.append(formula)
     return formula
 
@@ -186,10 +191,11 @@ def as_bool(f: Term | Formula, excepts: dict | None=None):
 class Formula:
     """A Well-Formed-Formula that consists of Term objects (i.e. variables) and 
     operators."""
+    op: Callable[[Any, ...], Any]
+    pos: str = "infix"
+    name: str = "f"
     _value: Any = None
-    unary_op: Callable[[Any], Any] | None = None
-    bin_op: Callable[[Any, Any], Any] | None = None 
-    operands: list['Formula' | 'Term' ] = field(default_factory=list)    
+    operands: list[Formula | Term ] = field(default_factory=list)    
     _parents: list[Formula | Law] = field(default_factory=list)
     _binds: Any = field(default_factory=list)
     _fire_on: list[Callable] = field(default_factory=list)
@@ -243,23 +249,20 @@ class Formula:
 
     def __repr__(self):
         # Bypass Python's name mangling by directly accessing the runtime globals
-        if not self.bin_op:
-            unary_map = globals().get("__unary_str_map", {})
-            op_name = unary_map.get(self.unary_op, getattr(self.unary_op, "__name__", "op"))
+        if self.pos == "prefix":
             # Unary operations only have one operand
-            return op_name + " (" + repr(self.operands[0]) + ")"
+            return self.name + " (" + repr(self.operands[0]) + ")"
+        elif self.pos == "infix":
+            parens1 = ('', '')
+            parens2 = ('', '')
+            if isinstance(self.operands[0], Formula):
+                parens1 = (' (', ') ')
+            if isinstance(self.operands[1], Formula):
+                parens2 = (' (', ') ')
+            return parens1[0] + repr(self.operands[0]) + parens1[1] + " " + \
+       self.name + parens2[0] + " " + repr(self.operands[1]) + parens2[1]
             
-        bin_map = globals().get("__bin_str_map", {})
-        op_str = f" {bin_map.get(self.bin_op, 'op')} "
-        # N-ary string representation: join all operands with the operator
-        parens1 = ('', '')
-        parens2 = ('', '')
-        if isinstance(self.operands[0], Formula):
-            parens1 = (' (', ') ')
-        if isinstance(self.operands[1], Formula):
-            parens2 = (' (', ') ') 
-        return parens1[0] + repr(self.operands[0]) + parens1[1] + \
-      op_str + parens2[0] + repr(self.operands[1]) + parens2[1]
+        return ""
 
     def __str__(self):
         return str(self.unwrap())
@@ -274,40 +277,40 @@ class Formula:
         return bool(self.unwrap())
     
     # Binary operations
-    __add__ = _register_bin_op(operator.add)
-    __radd__ = _register_rbin_op(operator.add)
-    __sub__ = _register_bin_op(operator.sub)
-    __rsub__ = _register_rbin_op(operator.sub)
-    __pow__ = _register_bin_op(operator.pow)
-    __rpow__ = _register_rbin_op(operator.pow)
-    __mul__ = _register_bin_op(operator.mul)
-    __rmul__ = _register_rbin_op(operator.mul)
-    __truediv__ = _register_bin_op(operator.truediv)
-    __rtruediv__ = _register_rbin_op(operator.truediv)
-    __floordiv__ = _register_bin_op(operator.floordiv)
-    __rfloordiv__ = _register_rbin_op(operator.floordiv)
-    __xor__ = _register_bin_op(operator.xor)
-    __rxor__ = _register_rbin_op(operator.xor)
+    __add__ = register_bin_op(operator.add)
+    __radd__ = register_rbin_op(operator.add)
+    __sub__ = register_bin_op(operator.sub)
+    __rsub__ = register_rbin_op(operator.sub)
+    __pow__ = register_bin_op(operator.pow)
+    __rpow__ = register_rbin_op(operator.pow)
+    __mul__ = register_bin_op(operator.mul)
+    __rmul__ = register_rbin_op(operator.mul)
+    __truediv__ = register_bin_op(operator.truediv)
+    __rtruediv__ = register_rbin_op(operator.truediv)
+    __floordiv__ = register_bin_op(operator.floordiv)
+    __rfloordiv__ = register_rbin_op(operator.floordiv)
+    __xor__ = register_bin_op(operator.xor)
+    __rxor__ = register_rbin_op(operator.xor)
 
     # Unary operations
-    __abs__ = _register_unary_op(operator.abs)
-    __not__ = _register_unary_op(operator.not_)
-    __pos__ = _register_unary_op(operator.pos)
-    __neg__ = _register_unary_op(operator.neg)
+    __abs__ = register_unary_op(operator.abs)
+    __not__ = register_unary_op(operator.not_)
+    __pos__ = register_unary_op(operator.pos)
+    __neg__ = register_unary_op(operator.neg)
 
     # Comparison operators. 
     # NOTE: We ignore bad-override error from Pyrefly. This is because normally
     # these operators return booleans, but we do *not* want to do that.
-    __lt__ = _register_bin_op(operator.lt) # pyrefly: ignore[bad-override]
-    __rlt__ = _register_rbin_op(operator.lt) # pyrefly: ignore[bad-override]
-    __gt__ = _register_bin_op(operator.gt) # pyrefly: ignore[bad-override]
-    __rgt__ = _register_rbin_op(operator.gt) # pyrefly: ignore[bad-override]
-    __ge__ = _register_bin_op(operator.ge) # pyrefly: ignore[bad-override]
-    __rge__ = _register_rbin_op(operator.ge) # pyrefly: ignore[bad-override]
-    __eq__ = _register_bin_op(operator.eq) # pyrefly: ignore[bad-override]
-    __req__ = _register_rbin_op(operator.eq) # pyrefly: ignore[bad-override]
-    __ne__ = _register_bin_op(operator.ne) # pyrefly: ignore[bad-override]
-    __rne__ = _register_rbin_op(operator.ne) # pyrefly: ignore[bad-override]
+    __lt__ = register_bin_op(operator.lt) # pyrefly: ignore[bad-override]
+    __rlt__ = register_rbin_op(operator.lt) # pyrefly: ignore[bad-override]
+    __gt__ = register_bin_op(operator.gt) # pyrefly: ignore[bad-override]
+    __rgt__ = register_rbin_op(operator.gt) # pyrefly: ignore[bad-override]
+    __ge__ = register_bin_op(operator.ge) # pyrefly: ignore[bad-override]
+    __rge__ = register_rbin_op(operator.ge) # pyrefly: ignore[bad-override]
+    __eq__ = register_bin_op(operator.eq) # pyrefly: ignore[bad-override]
+    __req__ = register_rbin_op(operator.eq) # pyrefly: ignore[bad-override]
+    __ne__ = register_bin_op(operator.ne) # pyrefly: ignore[bad-override]
+    __rne__ = register_rbin_op(operator.ne) # pyrefly: ignore[bad-override]
 
 def _register_ibin_op(bin_op: Callable[[Any, Any], Any]):
     """Helper function intended to help construct binary operations (like 
@@ -396,40 +399,40 @@ class Term:
         return int(self._value)
 
     # Binary operators
-    __add__ = _register_bin_op(operator.add)
-    __radd__ = _register_rbin_op(operator.add)
-    __sub__ = _register_bin_op(operator.sub)
-    __rsub__ = _register_rbin_op(operator.sub)
-    __pow__ = _register_bin_op(operator.pow)
-    __rpow__ = _register_rbin_op(operator.pow)
-    __mul__ = _register_bin_op(operator.mul)
-    __rmul__ = _register_rbin_op(operator.mul)
-    __truediv__ = _register_bin_op(operator.truediv)
-    __rtruediv__ = _register_rbin_op(operator.truediv)
-    __floordiv__ = _register_bin_op(operator.floordiv)
-    __rfloordiv__ = _register_rbin_op(operator.floordiv)
-    __xor__ = _register_bin_op(operator.xor)
-    __rxor__ = _register_rbin_op(operator.xor)
+    __add__ = register_bin_op(operator.add)
+    __radd__ = register_rbin_op(operator.add)
+    __sub__ = register_bin_op(operator.sub)
+    __rsub__ = register_rbin_op(operator.sub)
+    __pow__ = register_bin_op(operator.pow)
+    __rpow__ = register_rbin_op(operator.pow)
+    __mul__ = register_bin_op(operator.mul)
+    __rmul__ = register_rbin_op(operator.mul)
+    __truediv__ = register_bin_op(operator.truediv)
+    __rtruediv__ = register_rbin_op(operator.truediv)
+    __floordiv__ = register_bin_op(operator.floordiv)
+    __rfloordiv__ = register_rbin_op(operator.floordiv)
+    __xor__ = register_bin_op(operator.xor)
+    __rxor__ = register_rbin_op(operator.xor)
 
     # Unary operators
-    __abs__ = _register_unary_op(operator.abs)
-    __not__ = _register_unary_op(operator.not_)
-    __pos__ = _register_unary_op(operator.pos)
-    __neg__ = _register_unary_op(operator.neg)
+    __abs__ = register_unary_op(operator.abs)
+    __not__ = register_unary_op(operator.not_)
+    __pos__ = register_unary_op(operator.pos)
+    __neg__ = register_unary_op(operator.neg)
     
     # Comparison operators.
     # NOTE: We override bad-override because these operators *traditionally*
     # return a boolean but we want them to *not* do that.
-    __lt__ = _register_bin_op(operator.lt) # pyrefly: ignore[bad-override]
-    __rlt__ = _register_rbin_op(operator.lt) # pyrefly: ignore[bad-override]
-    __gt__ = _register_bin_op(operator.gt) # pyrefly: ignore[bad-override]
-    __rgt__ = _register_rbin_op(operator.gt) # pyrefly: ignore[bad-override]
-    __ge__ = _register_bin_op(operator.ge) # pyrefly: ignore[bad-override]
-    __rge__ = _register_rbin_op(operator.ge) # pyrefly: ignore[bad-override]
-    __eq__ = _register_bin_op(operator.eq) # pyrefly: ignore[bad-override]
-    __req__ = _register_rbin_op(operator.eq) # pyrefly: ignore[bad-override]
-    __ne__ = _register_bin_op(operator.ne) # pyrefly: ignore[bad-override]
-    __rne__ = _register_rbin_op(operator.ne) #pyrefly: ignore[bad-override]
+    __lt__ = register_bin_op(operator.lt) # pyrefly: ignore[bad-override]
+    __rlt__ = register_rbin_op(operator.lt) # pyrefly: ignore[bad-override]
+    __gt__ = register_bin_op(operator.gt) # pyrefly: ignore[bad-override]
+    __rgt__ = register_rbin_op(operator.gt) # pyrefly: ignore[bad-override]
+    __ge__ = register_bin_op(operator.ge) # pyrefly: ignore[bad-override]
+    __rge__ = register_rbin_op(operator.ge) # pyrefly: ignore[bad-override]
+    __eq__ = register_bin_op(operator.eq) # pyrefly: ignore[bad-override]
+    __req__ = register_rbin_op(operator.eq) # pyrefly: ignore[bad-override]
+    __ne__ = register_bin_op(operator.ne) # pyrefly: ignore[bad-override]
+    __rne__ = register_rbin_op(operator.ne) #pyrefly: ignore[bad-override]
 
     # In place assignment. NOTE: Although something like a += 1 should be the 
     # same as a = a + 1, it is *not* in this library. a += 1 changes increments
@@ -524,309 +527,5 @@ def on_change(form: Formula | Term, *args, **kwargs):
         def wrapped(old, new):
             return func(old, new, *args, **kwargs)
         form._on_change.append(wrapped)
-        return func
-    return fire_decorator
-
-
-def verify_any(law: Law):
-    return len(law._true_cache) > 0
-
-def verify_all(law: Law):
-    return len(law._false_cache) == 0
-
-
-def _specialize_helper(law: 'Law' | 'Variable' | 'Term' | 'Formula' | None, parent=None):
-    if law is None:
-        return None
-    if isinstance(law, Variable):
-        if parent is not None:
-            law._temp_value._parents.append(parent)
-        return law._temp_value
-    elif isinstance(law, (Term, Formula)):
-        if parent is not None:
-            law._parents.append(parent)
-        return law
-    else:
-        if law.bin_op is None:
-            assert law.unary_op is not None
-            form = Formula(unary_op=law.unary_op, operands=[])
-            assert law.operands
-            op_resolved = _specialize_helper(law.operands[0], parent=form)
-            form.operands = [op_resolved]
-            if parent is not None:
-                form._parents.append(parent)
-            return form     
-        else:
-            form = Formula(bin_op=law.bin_op, operands=[])
-            assert law.operands
-            form.operands = [_specialize_helper(op, parent=form) for op in law.operands]
-            if parent is not None:
-                form._parents.append(parent)
-            return form
-
-
-def _specialize(law: Law | Variable, subs: tuple[Term, ...]):
-    """Generates a Formula for the specified Terms."""
-    for i, var in enumerate(law.variables):
-        var._temp_value = subs[i]
-    return _specialize_helper(law)
-
-@dataclass
-class Universe:
-    entities: list[Term] = field(default_factory=list)
-
-@dataclass
-class Bucket:
-    """A linear-time spatial partition to restrict O(N^k) Law searches."""
-    universe: 'Universe'
-    condition: Callable[['Term'], bool]
-    
-    @property
-    def entities(self) -> list['Term']:
-        return [entity for entity in self.universe.entities if self.condition(entity)]
-    
-# Similar to here https://stackoverflow.com/a/7844038/667648
-def _law_register_bin_op(bin_op: Callable[[Any, Any], Any]):
-    def b(self: Law | Variable, other: 'Law' | 'Variable' | 'Formula' | 'Term' | Number | Literal):
-        if isinstance(other, Number) or type(other) is Literal:
-            other = Term(other) # pyrefly: ignore[bad-assignment]
-            
-        assert isinstance(other, (Law, Variable, Formula, Term))
-        left_ops = self.operands if isinstance(self, Law) and self.bin_op == bin_op else [self]
-        right_ops = other.operands if isinstance(other, Law) and getattr(other, 'bin_op', None) == bin_op else [other]
-        new_operands = left_ops + right_ops
-        
-        if isinstance(other, (Term, Formula)):
-            vc = self._var_count
-            vars_list = self.variables
-        elif isinstance(other, Variable):
-            vc = self._var_count + 1
-            vars_list = self.variables + [other]
-        else: # Law
-            vc = getattr(self, '_var_count', 0) + getattr(other, '_var_count', 0)
-            vars_list = self.variables + other.variables
-
-        law = Law(self.universe, vars_list, bin_op=bin_op, operands=new_operands, _var_count=vc)
-        self._parents.append(law)
-        other._parents.append(law)
-        return law
-    return b
-
-def _law_register_rbin_op(bin_op: Callable[[Any, Any], Any]):
-    def b(self: Law, other: 'Law' | 'Variable' | 'Formula' | 'Term' | Number | Literal):
-        if isinstance(other, Number) or type(other) is Literal:
-            other = Term(other) # pyrefly: ignore[bad-assignment]
-            
-        assert isinstance(other, (Law, Variable, Formula, Term))
-        left_ops = other.operands if isinstance(other, Law) and getattr(other, 'bin_op', None) == bin_op else [other]
-        right_ops = self.operands if isinstance(self, Law) and self.bin_op == bin_op else [self]
-        new_operands = left_ops + right_ops
-        
-        if isinstance(other, (Term, Formula)):
-            vc = self._var_count
-            vars_list = self.variables
-        elif isinstance(other, Variable):
-            vc = self._var_count + 1
-            vars_list = self.variables + [other]
-        else:
-            vc = self._var_count + getattr(other, '_var_count', 0)
-            vars_list = self.variables + other.variables
-            
-        law = Law(self.universe, vars_list, bin_op=bin_op, operands=new_operands, _var_count=vc)
-        self._parents.append(law)
-        other._parents.append(law)
-        return law
-    return b
-
-def _law_register_unary_op(unary_op):
-    def u(self):
-        if isinstance(self, Variable):
-            law = Law(self.universe, [self], unary_op=unary_op, operands=[self], _var_count=1)
-        else:
-            vc = self._var_count
-            law = Law(self.universe, self.variables, unary_op=unary_op, operands=[self], _var_count=vc)
-        self._parents.append(law)
-        return law
-    return u
-
-
-@dataclass
-class Variable:
-    universe: Universe
-    _var_count: int = 1
-    _temp_value: Any = None
-    _parents: list[Law] = field(default_factory=list)
-
-    def __post_init__(self):
-        self.variables: list[Variable] = [self]
-
-    # Binary operations
-    __add__ = _law_register_bin_op(operator.add)
-    __radd__ = _law_register_rbin_op(operator.add)
-    __sub__ = _law_register_bin_op(operator.sub)
-    __rsub__ = _law_register_rbin_op(operator.sub)
-    __pow__ = _law_register_bin_op(operator.pow)
-    __rpow__ = _law_register_rbin_op(operator.pow)
-    __mul__ = _law_register_bin_op(operator.mul)
-    __rmul__ = _law_register_rbin_op(operator.mul)
-    __truediv__ = _law_register_bin_op(operator.truediv)
-    __rtruediv__ = _law_register_rbin_op(operator.truediv)
-    __floordiv__ = _law_register_bin_op(operator.floordiv)
-    __rfloordiv__ = _law_register_rbin_op(operator.floordiv)
-    __xor__ = _law_register_bin_op(operator.xor)
-    __rxor__ = _law_register_rbin_op(operator.xor)
-
-    # Unary operations
-    __abs__ = _law_register_unary_op(operator.abs)
-    __not__ = _law_register_unary_op(operator.not_)
-    __pos__ = _law_register_unary_op(operator.pos)
-    __neg__ = _law_register_unary_op(operator.neg)
-
-    # Comparison operators.
-    # NOTE: We ignore bad-override because these operators *traditionally*
-    # return a boolean but we do not want that in our case.
-    __lt__ = _law_register_bin_op(operator.lt) # pyrefly: ignore[bad-override]
-    __rlt__ = _law_register_rbin_op(operator.lt) # pyrefly: ignore[bad-override]
-    __gt__ = _law_register_bin_op(operator.gt) # pyrefly: ignore[bad-override]
-    __rgt__ = _law_register_rbin_op(operator.gt) # pyrefly: ignore[bad-override]
-    __ge__ = _law_register_bin_op(operator.ge) # pyrefly: ignore[bad-override]
-    __rge__ = _law_register_rbin_op(operator.ge) # pyrefly: ignore[bad-override]
-    __eq__ = _law_register_bin_op(operator.eq) # pyrefly: ignore[bad-override]
-    __req__ = _law_register_rbin_op(operator.eq) # pyrefly: ignore[bad-override]
-    __ne__ = _law_register_bin_op(operator.ne) # pyrefly: ignore[bad-override]
-    __rne__ = _law_register_rbin_op(operator.ne) # pyrefly: ignore[bad-override]
-
-
-@dataclass
-class Law:
-    universe: Universe
-    variables: list[Variable] = field(default_factory=list)
-    unary_op: Callable[[Any], Any] | None = None
-    bin_op: Callable[[Any, Any], Any] | None = None 
-    operands: list['Law' | 'Variable' | 'Term' | 'Formula'] = field(default_factory=list)
-    _parents: list[Law] = field(default_factory=list)
-    _binds: Any = field(default_factory=list)
-    _fire_on: list[Callable] = field(default_factory=list)
-    _on_change: list[Callable] = field(default_factory=list)
-    _needs_update: bool = True
-    _var_count: int = 0
-    _specializations: list[Formula] = field(default_factory=list)
-    _true_cache: dict[int, Formula] = field(default_factory=dict) 
-    _false_cache: dict[int, Formula] = field(default_factory=dict)
-    
-    def __post_init__(self: Law):
-        substitutions = product(self.universe.entities, repeat=self._var_count)
-        # The law is the union of the specialization.
-        for substitution in substitutions:
-            form = _specialize(self, substitution)
-            self._specializations.append(form)
-            # Initialize the cache using memory ID
-            if form.unwrap():
-                self._true_cache[id(form)] = form
-            else:
-                self._false_cache[id(form)] = form
-
-    def _notify_truth_flip(self, formula: Formula, new_truth: bool):
-        """O(1) memory reassignment using object identity."""
-        fid = id(formula)
-        if new_truth:
-            self._false_cache.pop(fid, None)
-            self._true_cache[fid] = formula
-        else:
-            self._true_cache.pop(fid, None)
-            self._false_cache[fid] = formula
-
-    def _update(self):
-        for formula in self._specializations:
-            formula._update()
-
-    # Binary operations
-    __add__ = _law_register_bin_op(operator.add)
-    __radd__ = _law_register_rbin_op(operator.add)
-    __sub__ = _law_register_bin_op(operator.sub)
-    __rsub__ = _law_register_rbin_op(operator.sub)
-    __pow__ = _law_register_bin_op(operator.pow)
-    __rpow__ = _law_register_rbin_op(operator.pow)
-    __mul__ = _law_register_bin_op(operator.mul)
-    __rmul__ = _law_register_rbin_op(operator.mul)
-    __truediv__ = _law_register_bin_op(operator.truediv)
-    __rtruediv__ = _law_register_rbin_op(operator.truediv)
-    __floordiv__ = _law_register_bin_op(operator.floordiv)
-    __rfloordiv__ = _law_register_rbin_op(operator.floordiv)
-    __xor__ = _law_register_bin_op(operator.xor)
-    __rxor__ = _law_register_rbin_op(operator.xor)
-
-    # Unary operations
-    __abs__ = _law_register_unary_op(operator.abs)
-    __not__ = _law_register_unary_op(operator.not_)
-    __pos__ = _law_register_unary_op(operator.pos)
-    __neg__ = _law_register_unary_op(operator.neg)
-
-    # Comparison operators. 
-    __lt__ = _law_register_bin_op(operator.lt) # pyrefly: ignore[bad-override]
-    __rlt__ = _law_register_rbin_op(operator.lt) # pyrefly: ignore[bad-override]
-    __gt__ = _law_register_bin_op(operator.gt) # pyrefly: ignore[bad-override]
-    __rgt__ = _law_register_rbin_op(operator.gt) # pyrefly: ignore[bad-override]
-    __ge__ = _law_register_bin_op(operator.ge) # pyrefly: ignore[bad-override]
-    __rge__ = _law_register_rbin_op(operator.ge) # pyrefly: ignore[bad-override]
-    __eq__ = _law_register_bin_op(operator.eq) # pyrefly: ignore[bad-override]
-    __req__ = _law_register_rbin_op(operator.eq) # pyrefly: ignore[bad-override]
-    __ne__ = _law_register_bin_op(operator.ne) # pyrefly: ignore[bad-override]
-    __rne__ = _law_register_rbin_op(operator.ne) # pyrefly: ignore[bad-override]
-
-
-def fire_on_each(law: Law, *args, **kwarg):
-    """Use as a decorator: If some specialization of a Law's truthiness is 
-    True, call the decorated function.
-
-    :param form: Execute the proceeding function if `form` evaluates to True 
-        at some point in time.
-    :param args: Additional positional arguments to pass to the decorated 
-        function.
-    :param kwargs: Additional keyword arguments to pass to the decorated 
-        function.
-    """
-    def fire_decorator(func):
-        def wrapped():
-            return func(*args, **kwarg)
-        for form in law._specializations:
-            form._fire_on.append(wrapped)
-        return func
-    return fire_decorator
-def fire_on_all(law, *args, **kwargs):
-    """Raw Evaluation: Bypasses the cache and queries the Universe directly."""
-    def fire_decorator(func):
-        def check_all():
-            return all(f.unwrap() for f in law._specializations)
-            
-        state = {"was_all": check_all()}
-
-        def wrapped():
-            is_all = check_all()
-            if is_all and not state["was_all"]:
-                func(*args, **kwargs)
-            state["was_all"] = is_all
-
-        for form in law._specializations:
-            form._fire_on.append(wrapped)
-        return func
-    return fire_decorator
-
-def fire_on_some(law, n: int, *args, **kwargs):
-    """Raw Evaluation: Bypasses the cache and queries the Universe directly."""
-    def fire_decorator(func):
-        def count_true():
-            return sum(1 for f in law._specializations if f.unwrap())
-            
-        state = {"was_some": count_true() >= n}
-
-        def wrapped():
-            is_some = count_true() >= n
-            if is_some and not state["was_some"]:
-                func(*args, **kwargs)
-            state["was_some"] = is_some
-
-        for form in law._specializations:
-            form._fire_on.append(wrapped)
         return func
     return fire_decorator

@@ -1,25 +1,25 @@
-from pypagate import Term, Universe, Variable, \
-                     fire_on, fire_on_each, \
-                     permit, on_change, either, verify_any, verify_all, \
+from pypagate import Term, \
+                     fire_on, \
+                     permit, on_change, either, \
                      as_float, as_int, as_str
 
 
 def test_inc():
     x = Term(5)
     y = x + 1
-    assert y.unwrap() == 6
+    assert int(y) == 6
     x += 1
-    assert y.unwrap() == 7
+    assert int(y) == 7
 
 def test_two_terms():
     x = Term(6)
     y = Term(7)
     z = x + y
-    assert z.unwrap() == 13
+    assert int(z) == 13
     x += 1
-    assert z.unwrap() == 14
-    assert x.unwrap() == 7
-    assert y.unwrap() == 7
+    assert int(z) == 14
+    assert int(x) == 7
+    assert int(y) == 7
 
 def test_func_listen():
     y = 0
@@ -82,38 +82,15 @@ def test_either():
     switch()
     assert y == 1
 
-def test_universe():
-    U = Universe([Term(1), Term(2), Term(3)])
-    x = Variable(U)
-    assert verify_any(x > 2)
-    assert not verify_all(x > 2)
-
-def test_fire_on_each():
-    y = 0
-    v1, v2 = Term(0), Term(0)
-    U = Universe([v1, v2])
-    x = Variable(U)
-    law = (x == 2)
-    @fire_on_each(law)
-    def f():
-        print("HERE?")
-        nonlocal y
-        y += 1
-    assert y == 0
-    v1.change(2)
-    assert y == 1
-    v2.change(2)
-    assert y == 2
-
 def test_type_conversion():
     t1 = Term(0)
     f1 = as_str(t1)
     f2 = as_float(t1)
-    assert f1.unwrap() == '0'
-    assert t1.unwrap() == 0
+    assert str(f1) == '0'
+    assert int(t1) == 0
     assert float(t1) == 0.0
     assert int(t1) == 0
-    assert f2.unwrap() == 0.0
+    assert float(f2) == 0.0
     t2 = Term(1.5)
     f2 = as_int(t2)
     assert t2 == 1.5
