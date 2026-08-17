@@ -246,7 +246,7 @@ class Formula:
         if self.pos == "prefix":
             # Unary operations only have one operand
             return self.name + " (" + repr(self.operands[0]) + ")"
-        elif self.pos == "infix":
+        else:
             parens1 = ('', '')
             parens2 = ('', '')
             if isinstance(self.operands[0], Formula):
@@ -255,8 +255,6 @@ class Formula:
                 parens2 = (' (', ') ')
             return parens1[0] + repr(self.operands[0]) + parens1[1] + " " + \
        self.name + parens2[0] + " " + repr(self.operands[1]) + parens2[1]
-            
-        return ""
 
     def __str__(self):
         return str(self.unwrap())
