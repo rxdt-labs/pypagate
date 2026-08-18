@@ -121,7 +121,7 @@ def register_func(f: Callable):
 def as_str(f: Term | Formula, excepts: dict | None=None):
     """
     Stringify the contents of a Formula. If you want to actually extract
-    the values of a Formula, call str on it.
+    the values of a Formula, call ``str`` on it.
 
     :params f: The formula to convert.
     :params excepts: For special cases that `str` would not normally convert
@@ -157,7 +157,7 @@ def as_float(f: Term | Formula, excepts: dict | None=None):
 def as_int(f: Term | Formula, excepts: dict | None=None):
     """
     Intify the contents of a Formula. If you want to actually extract
-    the values of a Formula, call int on it.
+    the values of a Formula, call ``int`` on it.
 
     :params f: The formula to convert.
     :params excepts: For special cases that `int` would not normally convert
@@ -453,11 +453,8 @@ class Term:
 
 @dataclass
 class Const:
-    _value: Any
-
-    @property
-    def value(self):
-        return self._value
+    """Represents a constant Term. For efficiency purposes. Should not change so it has no parents."""
+    value: Any
 
 def bind(obj: Any, field_name: Any, form: Formula | Term):
     """Given an object and a field name, you can "bind" it to a Formula (or 

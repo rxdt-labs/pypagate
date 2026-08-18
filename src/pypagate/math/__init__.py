@@ -1,3 +1,7 @@
+"""
+A one-to-one reactified version of Python's built-in ``math`` module.
+"""
+
 import math as _math
 from pypagate import register_func
 
