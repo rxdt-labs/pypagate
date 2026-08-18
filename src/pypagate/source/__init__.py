@@ -1,3 +1,7 @@
+"""
+Source submodule for pypagate which allows for updating terms via listening.
+"""
+
 from collections.abc import Callable
 from numbers import Number
 from pypagate import Formula, Term

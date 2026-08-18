@@ -1,3 +1,9 @@
+"""
+Contains the fundamental building blocks of formulae: Terms, Formulas, and
+Constants. It also provides basic arithmetic and conversion building blocks
+for forming formulae.
+"""
+
 from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
