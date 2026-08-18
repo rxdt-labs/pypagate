@@ -86,7 +86,7 @@ The `fire_on` decorator waits for a formula to evaluate to `True` and then fires
 
 ## Why not RxPY?
 
-[ReactiveX for Python (`RxPY`)](https://rxpy.readthedocs.io/en/latest/index.html) is probably the de facto standard for reactive programming in Python. `RxPy` and `pypagate` differ substantially in how reactivity is used and each have different use cases.
+[ReactiveX for Python (`RxPY`)](https://rxpy.readthedocs.io/en/latest/index.html) is probably the de facto standard for reactive programming in Python. `RxPY` and `pypagate` differ substantially in how reactivity is used and each have different use cases.
 
 - `RxPY` focuses on processing streams of data.
 - `pypagate` focuses on keeping everything up-to-date so you do not have to worry about manual updates.
