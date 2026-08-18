@@ -1,6 +1,4 @@
 import pytest
-
-from pypagate import Term
 from pypagate.source import SourceMap, exec_always, exec_either, exec_while
 
 

@@ -1,6 +1,4 @@
-import pytest
-
-from pypagate import Const, Formula, Term, evaluate
+from pypagate import Const, Term, evaluate
 
 
 def test_arithmetic_ops():

@@ -1,7 +1,5 @@
 import math as _math
 
-import pytest
-
 from pypagate import Term
 from pypagate.math import (ceil, comb, cos, degrees, exp, factorial, floor,
                            gcd, hypot, lcm, log, pi, e, pow, radians, sin, sqrt,
