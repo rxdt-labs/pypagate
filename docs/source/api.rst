@@ -1,8 +1,9 @@
 API
 ===
 
-.. automodule:: pypagate
-   :members:
+.. autosummary::
+   :toctree: generated
+   :recursive:
 
-.. automodule:: pypagate.source
-   :members:
+   pypagate
+   
