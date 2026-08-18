@@ -3,8 +3,10 @@ name = "pypagate"
 version = "0.7.0"
 description = "A simple library for functional reactive programming in Python"
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [
-    { email = "csumnicht@berkeley.edu" }
+    { name = "Christopher Sumnicht", email = "csumnicht@berkeley.edu" }
 ]
 requires-python = ">=3.11"
 dependencies = []
