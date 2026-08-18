@@ -14,5 +14,6 @@ Contents
 
    basics
    listening
+   comparison
    internals
    api
