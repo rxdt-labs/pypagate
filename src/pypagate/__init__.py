@@ -309,6 +309,8 @@ class Formula:
     # these operators return booleans, but we do *not* want to do that.
     __lt__ = register_bin_op(operator.lt) # pyrefly: ignore[bad-override]
     __rlt__ = register_rbin_op(operator.lt) # pyrefly: ignore[bad-override]
+    __le__ = register_bin_op(operator.le) # pyrefly: ignore[bad-override]
+    __rle__ = register_rbin_op(operator.le) # pyrefly: ignore[bad-override]
     __gt__ = register_bin_op(operator.gt) # pyrefly: ignore[bad-override]
     __rgt__ = register_rbin_op(operator.gt) # pyrefly: ignore[bad-override]
     __ge__ = register_bin_op(operator.ge) # pyrefly: ignore[bad-override]
@@ -432,6 +434,8 @@ class Term:
     # return a boolean but we want them to *not* do that.
     __lt__ = register_bin_op(operator.lt) # pyrefly: ignore[bad-override]
     __rlt__ = register_rbin_op(operator.lt) # pyrefly: ignore[bad-override]
+    __le__ = register_bin_op(operator.le) # pyrefly: ignore[bad-override]
+    __rle__ = register_rbin_op(operator.le) # pyrefly: ignore[bad-override]
     __gt__ = register_bin_op(operator.gt) # pyrefly: ignore[bad-override]
     __rgt__ = register_rbin_op(operator.gt) # pyrefly: ignore[bad-override]
     __ge__ = register_bin_op(operator.ge) # pyrefly: ignore[bad-override]
