@@ -115,7 +115,9 @@ def register_unary_op(op: Callable[[Any], Any]):
     return u
 
 def register_func(f: Callable):
-    """Helper function intended to help construct unary operations."""
+    """Make a function a reactive.
+    
+    :params f: The function to make reactive."""
     def u(*args: Formula | Term):
         formula = Formula(op=f, operands=args, pos="prefix")
         for arg in args:
