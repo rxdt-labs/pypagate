@@ -9,7 +9,11 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from numbers import Number
 import operator
-from typing import Any, Literal, Sequence
+from typing import Any, Literal, Sequence, TypeVar
+
+_IBinT = TypeVar("_IBinT", bound="Formula | Term")
+_EitherT = TypeVar("_EitherT")
+_EitherU = TypeVar("_EitherU")
 
 
 def evaluate(form: Formula | Term | Const) -> Any:
@@ -87,7 +91,7 @@ def register_rbin_op(op: Callable[[Any, Any], Any]):
         assert isinstance(other, Term) or isinstance(other, Formula) or isinstance(other, Const)
         try:
             name = bin_str_map[op]
-            formula = Formula(op=op, operands=[self, other], pos="infix", name=name)
+            formula = Formula(op=op, operands=[other, self], pos="infix", name=name)
             self._parents.append(formula)
             if not isinstance(other, Const):
                 other._parents.append(formula)
@@ -118,9 +122,14 @@ def register_func(f: Callable):
     """Make a function a reactive.
     
     :params f: The function to make reactive."""
-    def u(*args: Formula | Term):
-        formula = Formula(op=f, operands=args, pos="prefix")
+    def u(*args: Formula | Term | Const | Number):
+        operands = []
         for arg in args:
+            if isinstance(arg, Number):
+                arg = Const(arg)
+            operands.append(arg)
+        formula = Formula(op=f, operands=operands, pos="prefix")
+        for arg in operands:
             if not isinstance(arg, Const):
                 arg._parents.append(formula)
         return formula
@@ -214,13 +223,17 @@ class Formula:
     _on_change: list[Callable] = field(default_factory=list)
     _needs_update: bool = True
 
+    def __post_init__(self):
+        self._value = evaluate(self)
+
     def _update(self):
         # Capture the old truth state before mutation
+        old_value = self._value
         new_value = evaluate(self)
         
-        if new_value != self._value:
+        if new_value != old_value:
             for func in self._on_change:
-                func(self._value, new_value)
+                func(old_value, new_value)
         
         self._value = new_value
         self._needs_update = False
@@ -233,7 +246,7 @@ class Formula:
             setattr(obj, field_name, self._value)
             
         for func in self._fire_on:
-            if self.value:
+            if bool(new_value) and not bool(old_value):
                  func()
 
     def _propegate(self):
@@ -322,18 +335,13 @@ class Formula:
 def _register_ibin_op(bin_op: Callable[[Any, Any], Any]):
     """Helper function intended to help construct binary operations (like 
     __radd__) for Formula and Term."""
-    def b(self: Formula | Term, other: Number | Literal):
+    def b(self: _IBinT, other: Any) -> _IBinT:
         new_value = bin_op(self._value, other)
         if new_value != self._value:
             # Something did change.
             # Execute _on_change funcs.
             for func in self._on_change:
                 func(self._value, new_value)
-            # Since it changed, also check truthiness and execute
-            # corresponding functions.
-            if self.value:
-                for func in self._fire_on:
-                    func()
         self._value = new_value
         self._propegate()
         return self
@@ -381,10 +389,6 @@ class Term:
         # Execute _on_change funcs.
         for func in self._on_change:
             func(self._value, new_value)
-        # Execute _on_fire funcs if the Term has truthiness of True
-        if self.value:
-            for func in self._fire_on:
-                func()
         # Continue updating.
         self._value = new_value
         self._propegate()
@@ -513,7 +517,8 @@ def permit(form: Formula | Term, *args, **kwargs):
         return f
     return permit_decorator
 
-def either(form: Formula | Term, f: Callable[[], None], g: Callable[[], None]):
+def either(form: Formula | Term, f: Callable[[], _EitherT],
+           g: Callable[[], _EitherU]) -> Callable[[], _EitherT | _EitherU]:
     """Creates a new function with name ``name`` that, when called, executes
     ``f`` when ``form`` is ``True`` and ``g`` when ``form`` is ``False``.
 
