@@ -181,7 +181,7 @@ def as_int(f: Term | Formula, excepts: dict | None=None):
 
 def as_bool(f: Term | Formula, excepts: dict | None=None):
     """
-    Intify the contents of a Formula. If you want to actually extract
+    Boolify the contents of a Formula. If you want to actually extract
     the values of a Formula, call int on it.
 
     :params f: The formula to convert.
