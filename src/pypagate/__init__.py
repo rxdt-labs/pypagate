@@ -87,7 +87,7 @@ def register_rbin_op(op: Callable[[Any, Any], Any]):
         assert isinstance(other, Term) or isinstance(other, Formula) or isinstance(other, Const)
         try:
             name = bin_str_map[op]
-            formula = Formula(op=op, operands=[self, other], pos="infix", name=name)
+            formula = Formula(op=op, operands=[other, self], pos="infix", name=name)
             self._parents.append(formula)
             if not isinstance(other, Const):
                 other._parents.append(formula)
@@ -119,8 +119,13 @@ def register_func(f: Callable):
     
     :params f: The function to make reactive."""
     def u(*args: Formula | Term):
-        formula = Formula(op=f, operands=args, pos="prefix")
+        operands = []
         for arg in args:
+            if isinstance(arg, Number):
+                arg = Const(arg)
+            operands.append(arg)
+        formula = Formula(op=f, operands=operands, pos="prefix")
+        for arg in operands:
             if not isinstance(arg, Const):
                 arg._parents.append(formula)
         return formula
@@ -214,13 +219,17 @@ class Formula:
     _on_change: list[Callable] = field(default_factory=list)
     _needs_update: bool = True
 
+    def __post_init__(self):
+        self._value = evaluate(self)
+
     def _update(self):
         # Capture the old truth state before mutation
+        old_value = self._value
         new_value = evaluate(self)
         
-        if new_value != self._value:
+        if new_value != old_value:
             for func in self._on_change:
-                func(self._value, new_value)
+                func(old_value, new_value)
         
         self._value = new_value
         self._needs_update = False
@@ -233,7 +242,7 @@ class Formula:
             setattr(obj, field_name, self._value)
             
         for func in self._fire_on:
-            if self.value:
+            if bool(new_value) and not bool(old_value):
                  func()
 
     def _propegate(self):
@@ -329,11 +338,6 @@ def _register_ibin_op(bin_op: Callable[[Any, Any], Any]):
             # Execute _on_change funcs.
             for func in self._on_change:
                 func(self._value, new_value)
-            # Since it changed, also check truthiness and execute
-            # corresponding functions.
-            if self.value:
-                for func in self._fire_on:
-                    func()
         self._value = new_value
         self._propegate()
         return self
@@ -381,10 +385,6 @@ class Term:
         # Execute _on_change funcs.
         for func in self._on_change:
             func(self._value, new_value)
-        # Execute _on_fire funcs if the Term has truthiness of True
-        if self.value:
-            for func in self._fire_on:
-                func()
         # Continue updating.
         self._value = new_value
         self._propegate()

@@ -70,9 +70,11 @@ def exec_either(form, f, g, source):
     :param g: The function to execute if ``form`` is ``False``.
     :param source: Either ``f`` or ``g`` is executed whenever
        source.listen(...) is called."""
-    @exec_always(source)
-    def func():
-        if form.value:
-            return f()
-        return g()
-    return func
+    def decorator(func):
+        @exec_always(source)
+        def listener():
+            if form.value:
+                return f()
+            return g()
+        return func
+    return decorator
