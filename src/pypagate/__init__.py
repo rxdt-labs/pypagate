@@ -300,7 +300,6 @@ class Formula:
 
     # Unary operations
     __abs__ = register_unary_op(operator.abs)
-    __not__ = register_unary_op(operator.not_)
     __pos__ = register_unary_op(operator.pos)
     __neg__ = register_unary_op(operator.neg)
 
@@ -425,7 +424,6 @@ class Term:
 
     # Unary operators
     __abs__ = register_unary_op(operator.abs)
-    __not__ = register_unary_op(operator.not_)
     __pos__ = register_unary_op(operator.pos)
     __neg__ = register_unary_op(operator.neg)
     
