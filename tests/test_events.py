@@ -104,6 +104,7 @@ def test_either_return_values():
 
 def test_bind_term():
     class Obj:
+        field: int
         pass
     obj = Obj()
     x = Term(5)
@@ -116,6 +117,7 @@ def test_bind_term():
 
 def test_bind_formula():
     class Obj:
+        field: int
         pass
     obj = Obj()
     x = Term(5)

@@ -9,7 +9,11 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from numbers import Number
 import operator
-from typing import Any, Literal, Sequence
+from typing import Any, Literal, Sequence, TypeVar
+
+_IBinT = TypeVar("_IBinT", bound="Formula | Term")
+_EitherT = TypeVar("_EitherT")
+_EitherU = TypeVar("_EitherU")
 
 
 def evaluate(form: Formula | Term | Const) -> Any:
@@ -118,7 +122,7 @@ def register_func(f: Callable):
     """Make a function a reactive.
     
     :params f: The function to make reactive."""
-    def u(*args: Formula | Term):
+    def u(*args: Formula | Term | Const | Number):
         operands = []
         for arg in args:
             if isinstance(arg, Number):
@@ -331,7 +335,7 @@ class Formula:
 def _register_ibin_op(bin_op: Callable[[Any, Any], Any]):
     """Helper function intended to help construct binary operations (like 
     __radd__) for Formula and Term."""
-    def b(self: Formula | Term, other: Number | Literal):
+    def b(self: _IBinT, other: Any) -> _IBinT:
         new_value = bin_op(self._value, other)
         if new_value != self._value:
             # Something did change.
@@ -513,7 +517,8 @@ def permit(form: Formula | Term, *args, **kwargs):
         return f
     return permit_decorator
 
-def either(form: Formula | Term, f: Callable[[], None], g: Callable[[], None]):
+def either(form: Formula | Term, f: Callable[[], _EitherT],
+           g: Callable[[], _EitherU]) -> Callable[[], _EitherT | _EitherU]:
     """Creates a new function with name ``name`` that, when called, executes
     ``f`` when ``form`` is ``True`` and ``g`` when ``form`` is ``False``.
 
