@@ -4,7 +4,7 @@ import pytest
 
 from pypagate import Term
 from pypagate.math import (ceil, comb, cos, degrees, exp, factorial, floor,
-                           gcd, hypot, lcm, log, pi, pow, radians, sin, sqrt,
+                           gcd, hypot, lcm, log, pi, e, pow, radians, sin, sqrt,
                            tan)
 
 
@@ -91,4 +91,4 @@ def test_degrees_radians():
 def test_constants():
     assert pi == _math.pi
     assert _math.isclose(pi, 3.14159, rel_tol=1e-4)
-    assert _math.e == _math.e
+    assert e == _math.e
